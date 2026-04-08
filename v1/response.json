@@ -1,0 +1,131 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "$defs": {
+    "procedureResource": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "string"
+        },
+        {
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "pagination": {
+      "type": "object",
+      "properties": {
+        "offset": {
+          "type": "number"
+        },
+        "limit": {
+          "type": "number"
+        },
+        "total": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "offset",
+        "limit"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "properties": {
+    "protocol": {
+      "type": "string"
+    },
+    "api": {
+      "type": "string"
+    },
+    "procedures": {
+      "type": "object",
+      "patternProperties": {
+        "^[a-zA-Z0-9_]+$": {
+          "type": "object",
+          "properties": {
+            "refs": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^[a-zA-Z0-9_]+/[a-zA-Z0-9_]+$"
+              }
+            },
+            "pagination": {
+              "$ref": "#/$defs/pagination"
+            }
+          },
+          "required": [
+            "refs"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    "resources": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[a-zA-Z0-9_]+\/[a-zA-Z0-9_]+$",
+        "$ref": "#/$defs/procedureResource"
+      }
+    },
+    "details": {
+      "type": "object",
+      "properties": {
+        "request_id": {
+          "type": "string"
+        },
+        "execution_time_ms": {
+          "type": "number"
+        },
+        "procedures_execution": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "procedure": {
+                "type": "string"
+              },
+              "order": {
+                "type": "number"
+              },
+              "timed_out": {
+                "type": "boolean"
+              },
+              "execution_time_ms": {
+                "type": "number"
+              },
+              "required": [
+                "id",
+                "name",
+                "order",
+                "timed_out",
+                "execution_time_ms"
+              ],
+              "additionalProperties": false
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "protocol",
+    "api"
+  ],
+  "additionalProperties": false
+}

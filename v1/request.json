@@ -1,0 +1,188 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "$defs": {
+    "procedureInput": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "string"
+        },
+        {
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "pagination": {
+      "type": "object",
+      "properties": {
+        "offset": {
+          "type": "number"
+        },
+        "limit": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "offset",
+        "limit"
+      ],
+      "additionalProperties": false
+    },
+    "procedure": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "input": {
+          "$ref": "#/$defs/procedureInput"
+        },
+        "pagination": {
+          "$ref": "#/$defs/pagination"
+        }
+      },
+      "required": [
+        "id",
+        "name"
+      ],
+      "additionalProperties": false
+    },
+    "subscription": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "resource": {
+          "type": "string",
+          "maxLength": 100
+        }
+      },
+      "required": [
+        "id",
+        "resource"
+      ],
+      "additionalProperties": false
+    },
+    "options": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "execution": {
+          "$ref": "#/$defs/requestOptionExecution"
+        },
+        "authentication": {
+          "$ref": "#/$defs/requestOptionAuthentication"
+        },
+        "return": {
+          "$ref": "#/$defs/requestOptionReturn"
+        }
+      }
+    },
+    "requestOptionExecution": {
+      "type": "object",
+      "properties": {
+        "strategy": {
+          "enum": [
+            "sequential",
+            "parallel"
+          ]
+        },
+        "procedure_timeout": {
+          "type": "number"
+        }
+      },
+      "additionalProperties": false
+    },
+    "requestOptionAuthentication": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "scheme": {
+              "const": "bearer"
+            },
+            "token": {
+              "type": "string"
+            },
+            "token_format": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "scheme",
+            "token",
+            "token_format"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "requestOptionReturn": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "request_id",
+          "request_execution_time",
+          "procedures_execution_details"
+        ]
+      },
+      "minItems": 1,
+      "uniqueItems": true,
+      "additionalProperties": false
+    }
+  },
+  "properties": {
+    "protocol": {
+      "description": "Protocol version",
+      "type": "string",
+      "maxLength": 3
+    },
+    "api": {
+      "description": "API version",
+      "type": "string",
+      "maxLength": 100
+    },
+    "procedures": {
+      "description": "",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/procedure"
+      }
+    },
+    "subscriptions": {
+      "description": "",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/subscription"
+      }
+    },
+    "options": {
+      "description": "",
+      "$ref": "#/$defs/options"
+    }
+  },
+  "required": [
+    "protocol",
+    "api"
+  ],
+  "additionalProperties": false
+}

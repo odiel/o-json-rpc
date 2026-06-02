@@ -1,5 +1,5 @@
 
-# List of request and responses examples to better illustrate the protocol behavior. 
+# List of request and response examples to better illustrate the protocol behavior. 
 
 ## Assumptions
 

@@ -1,535 +1,266 @@
-# v1 Specification
-
-## Conventions
+# v1 specification
 
 ## Definitions
 
-API:
+### API 
+An arbitrary value to define a version, namespace or a combination of both.
 
-Procedure:
+### Procedure
+Reusable piece of code logic to be executed when called by its assigned name.
 
-Resource:
+### Resource
+Composed by a name and a JSON schema; it defines a typed dataset that is used as input arguments for executing procedures as well as the result of a procedure output.
+Resource names also have a use as reference for client applications that are interested in getting notified every time a resource changes.    
 
-Subscription:
+### Subscription
+A mechanism that allows clients to connect to the server and receive notifications when changes for a Resource are broadcast.
 
-Input:
+### Authentication
+Authentication is a required step where the client is required to provide a set of credentials in order to gain access to content with limited access.
 
-Output:
+## Request object properties - [schema definition](./request.json)
 
-Authentication:
+This section defines the JSON request object and all its properties.
 
+### protocol (required; string)
 
+Defines the O-JSON-RPC protocol version to be used when processing the request. \
+`v1` is the only supported version so far.
 
-## Request definition
+### api (required; string)
 
-***protocol*** (required)
+API to be used when processing the request. Is an arbitrary value defined by the developer to group a set of procedures.
 
-Defines the protocol version to be used when processing the request. \
-So far there is only one supported version: `v1`
-
-***api*** (required)
-
-Defines the API to be used to process the request. \
-*api* is an arbitrary value defined by the developer.
-
-Below are some inspirational examples for API versioning values:
+Versioning examples:
 - `"api": "v1"`,
 - `"api": "v2"`,
 - `"api": "1.0.0"`,
 - `"api": "version1"`
 
-It can also be used to split an API by different domains.
+It can also be used to split an API by different namespaces.
 - `"api": "application"`
 - `"api": "management"`
 
-Ultimately both versioning and domain names can be combined.
+Examples combining both versioning and namespace.
 - `"api": "v1/application"`
 - `"api": "1.0.0/management"`
+- `"api": "application/v1"`
+- `"api": "management/1.0.0"`
 
-***procedures*** (optional)
+### procedures (optional; strict object)
 
-A collection of procedures to be executed.
+Collection of procedure definitions to be executed for the request.
 
-*procedures[x].id* (required)
+`procedures[].id` (required; string)
 
-Unique identification value assigned to the procedure execution. \
-The same procedure can be used multiple times in one single request. *id* allows to identify a single procedure execution in the response object.
+Unique identifier assigned to the execution of the procedure for that request. \
+Because the same procedure name can be used multiple times in one single request; *id* allows to identify a particular procedure execution.
 
-*procedures[x].name* (required)
+`procedures[].name` (required; string)
 
 Name of the procedure to execute.
 
-*procedures[x].input* (optional)
+`procedures[].input` (optional; JSON value)
 
-Input resource to pass to the procedure when executing. \
-Although it is an optional property, procedures requiring an input parameter would return an {ERROR} error when the input is missing.
+Input resource to pass to the procedure for execution. \
+Although it is listed as optional, procedures defining an input resource must enforce validating its content before execution.
+Failing to validate the input resource must result in a PROCEDURE:INCOMPATIBLE_INPUT error.
 
-*procedures[x].pagination* (optional)
+### subscriptions (optional; collection of strict object)
 
-Set of properties to indicate to the procedure the result should be paginated.
+This section in defines a list of objects to subscribe to specific resources to get notifications when a change happens.
+Note: the client should establish a direct channel with the backend to get notified.
 
-*procedures[x].pagination.offset* (required)
+`subscriptions.resource_name` (required, name of the resource to subscribe)
 
-*procedures[x].pagination.limit* (required)
+### options (optional; strict object)
 
+Allows the client to configure aspects of the request as well as hinting needed response details.
 
+`options.id` (optional; string)
 
-***subscriptions*** (optional)
+Arbitrary id value to assign to the request. \
+The server implementation must either assign a random id value or use the one provided by the client to uniquely identify a request.
 
-***options*** (optional)
+`options.execution` (optional; strict object)
 
-## Response definition
+Section to configure the request execution.
 
+`options.execution.strategy` (optional; one of the following below)
 
-## Errors definition
+- `sequential`: executes one procedure at the time; the response is provided once the last procedure execution is done; this must be the default execution strategy if none is provided.
+- `parallel`: executes the procedures in parallel, the response is provided once all procedures execution finish.
+
+`options.execution.procedure_timeout` (optional; number)
+
+Number of milliseconds a procedure should run for before timing it out. 
+
+`options.return` (optional; collection of fixed string values)
+
+Instruct the server to provide additional details in the response object.
+When this option is provided at least one value must be set.
+One or any combination of values is acceptable.
+
+- `request_id` - tells the server to return the request id.
+- `request_execution_time` - tells the server to return the total execution time of the request; value must be in milliseconds. 
+- `procedures_execution_details` - tells the server to return details for each procedure execution; check the `Response object properties` section below for more information.
+
+`options.authentication` (optional; strict object); the `Authentication options` section below details this option.
 
 ## Authentication options
 
-TODO: review this part again
-https://www.youtube.com/watch?v=iX8g4LqF8p8
+O-JSON-RPC does not specify any implementation details regarding the handling of the authentication mechanism;
+this option is only a space in the request object for the client to present the credentials to the server application for a request.
 
-### Basic <- not supported
-Scheme: basic
-Token: string
-Token format: plain or base64
+`options.authentication.scheme` (required, string)
 
+Scheme to use in the authentication.
 
-### Digest <- md5 not supported, only more secure hash formats are
-Scheme: digest
-Token: string
-Token format: md5 | sha128
+`options.authentication.token` (required, string)
 
+Value of the credential token for the authentication.
 
-### API Key
-Scheme: api_key
-Token: string
-Token format: sha128
+`options.authentication.token_type` (required, string)
 
-### Session
-Scheme: session
-Token: string
-Token format:
+Type or format of the token.
 
-### Bearer
-Scheme: bearer
-Token: string
-Token format: jwt
+`options.authentication.provider` (optional, string)
 
-### Access/Refresh token
-Scheme: access_token | refresh_token
-Token: string
-Token type: access | refresh
+Applicable only when `scheme` is `identity_provider`. Name of the provider for the identity.
 
-### Identity Provider
-Scheme: identity_provider
-Provider: string
-Token: string
-Token type: id | access | refresh
+### Supported mechanisms
 
-
-
------
-
-
-## Let's start with a simple example:
-
-Request:
-```json
-{
-  "version": "1.0",
-  "api": "v1",
-  "procedures": [
-    {
-      "id": "1",
-      "name": "ping"
-    },
-    {
-      "id": "2",
-      "name": "hello",
-      "input": {
-        "name": "World"
-      }
-    },
-    {
-      "id": "3",
-      "name": "hello",
-      "input": {
-        "name": "JSON"
-      }
-    }
-  ]
-}
+#### Session
 ```
+scheme: session
+token_type: plain-text | base64
+````
 
-
-## procedures
-
-
-# We have seen how to define a  request, let's see now what the server could respond back
-
-```json
-{
-  "version": "v1",
-  "api": "v1",
-  "procedures": {
-    "1": {
-      "refs": [
-        "Pong/0"
-      ]
-    },
-    "2": {
-      "refs": [
-        "Hello/World"
-      ]
-    },
-    "3": {
-      "refs": [
-        "Hello/JSON"
-      ]
-    }
-  },
-  "resources": {
-    "Pong/0": "pong",
-    "Hello/World": "Hello World!",
-    "Hello/JSON": "Hello JSON!"
-  }
-}
+#### API Key
 ```
+scheme: api_key
+token_type: plain-text | base64
+````
 
-Similar to the request, we get back `version` and `api`. This is the server hinting the client which protocol version processed the request and for which API. This information could be useful for clients to decide how to render the information when supporting multiple API versions.
-
-`procedures` holds the result for the procedure execution. Notice that what we get back is the list of ids we defined in the request and for each of those ids a collection of resource references. Because a request could have the same procedure executing more than once and that procedure could yield the same resource for each execution the server deduplicates the resources.
-
-We call a `resource` to the output of a procedure execution.
-
-The `resources` property holds a collection of all resources for the request.
-
-
-# Pagination
-
-# Execution strategy and other settings
-
-# Authentication
-
-# Debugging
-
-# More examples
-
-
-
-
-> When no additional settings is provided in the request the server executes the procedures in the order they are defined in the request.
-
-
------
-
-```json
-{
-  "jrpc": "v1",
-  "api": "v1",
-  "request": {
-    "id": "request_id",
-    "execution": {
-      "strategy": "parallel",
-      "timeout": 100,
-      "procedure_timeout": 100
-    },
-    "authentication": {
-      "scheme": "bearer",
-      "token": "<redacted>",
-      "token_format": "JWT"
-    },
-    "return": {
-      "request_id": true,
-      "total_execution_time": true,
-      "procedure_execution_time": true,
-      "execution_strategy": true,
-      "execution_order": true
-    }
-  },
-  "procedures": [
-    {
-      "id": "ping",
-      "name": "ping"
-    },
-    {
-      "id": "sayHi",
-      "name": "sayHi",
-      "input": {
-        "person": "World"
-      }
-    },
-    {
-      "id": "transformText",
-      "name": "transformText",
-      "input": {
-        "text": "text to transform"
-      }
-    },
-    {
-      "id": "getUsersList",
-      "name": "getUsersList",
-      "input": {
-        "offset": 0,
-        "limit": 2
-      }
-    }
-  ],
-  "subscriptions": [
-    {
-      "resource": "TransformedText"
-    }
-  ]
-}
+#### Token
 ```
+scheme: access_token | refresh_token
+token_type: jwt
+````
 
-
-```json
-{
-  "version": "v1",
-  "api": "v1",
-  "request": {
-    "id": "request_id",
-    "execution": {
-      "ping": {
-        "order": 1,
-        "time": 1
-      },
-      "sayHi": {
-        "order": 2,
-        "time": 5
-      },
-      "transformText": {
-        "order": 3,
-        "time": 5
-      },
-      "getUsersList": {
-        "order": 4,
-        "time": 1000
-      }
-    }
-  },
-  "procedures": {
-    "ping": {
-      "resources": [
-        "Pong/0"
-      ]
-    },
-    "sayHi": {
-      "resources": [
-        "Hello/0"
-      ]
-    },
-    "transformText": {
-      "resources": [
-        "TransformedText/0"
-      ]
-    },
-    "usersList": {
-      "resources": [ 
-        "User/1",
-        "User/2"
-      ],
-      "offset": 0,
-      "limit": 2,
-      "total": 10
-    }
-  },
-  "resources": {
-    "Pong/0": "pong",
-    "Hello/0": "Hello World!",
-    "TransformedText/0": {
-      "original": "text to transform",
-      "transformed": "Text To Transform"
-    },
-    "User/1": {},
-    "User/2": {}
-  }
-}
+#### Identity Provider
 ```
+scheme: identity_provider
+token_type: id | access | refresh
+provider: string
+````
+
+## Response object properties - [schema definition](./response.json)
+
+This section defines the JSON response object and all its properties.
+
+### protocol (required)
+
+When the request is properly handled the protocol version must match the same version from the request. \
+When the server is unable to identify the protocol in the request it must default to the lowest known protocol version, that is `v1`.
+
+### api (required)
+
+API value, must match the same value from the request when the API is registered in the server; otherwise `unknown`.
+
+### error (optional; strict object)
+
+Section produced as a result of a failure during the processing of the request.
+
+- `error.code` (required; string) error code, see the list below
+- `error.message` (optional; string) additional error information
+
+### procedures (optional; strict object)
+
+Map of results for the procedures execution.
+Indexed by the procedure id given in the request object.
+
+There are 2 possible outcomes of a procedure execution `error` or `result`, only one or the other must appear.
+
+`procedures[].error` (required; strict object) required when there is any type of failure during the procedure execution.
+
+- `procedures[].error.code` (required; string) error code, see the list below.
+- `procedures[].error.message` (optional; string) additional error information.
+
+`procedures[].result` (required; any JSON value) when the procedure execution is successful the output must be stored in the `result` property.
+
+### details (optional; strict object)
+
+This section must appear when the request is sent with any value in `options.return`.
+
+`details.request_id` (required when `options.return['request_id']`) id of the request. \
+`details.execution_time` (required when `options.return['request_execution_time']`) total number of milliseconds the request took to process. \
+`details.procedures_execution` (required when `options.return['procedures_execution_details']` map of the detailed run for each procedure.
+- `details.procedures_execution[].id` (required; string) id assigned to the procedure execution in the request.
+- `details.procedures_execution[].procedure` (required, string) name of the procedure executed.
+- `details.procedures_execution[].order` (required, number) order number in which the procedure was executed in the server.
+- `details.procedures_execution[].timed_out` (required, boolean) true when the procedure timed out.
+- `details.procedures_execution[].execution_time` (required, number) number of milliseconds it took to run the procedure; value must be set to the timeout configuration when exceeding it.
+
+## Errors definition
+
+There are 2 main categories of errors:
+
+- `SERVER` for errors specific to the server execution and general request processing. Server errors are must be returned in the main response object.
+- `PROCEDURE` for errors related to each procedure execution. Procedure errors are scoped to a particular procedure execution result.
+
+For errors where the request content can not be parsed the server must default to the lowest protocol version, that is `v1`.
+
+`SERVER:UPGRADE_REQUEST_NOT_SUPPORTED`
+
+Must be returned when upgrading the client request is not supported by the server implementation.
+
+`SERVER:REQUEST_CONTENT_TOO_BIG`
+
+Must be returned when the request content exceed the allowed content size by the server configuration.
+
+`SERVER:REQUEST_METHOD_NOT_SUPPORTED`
+
+Must be returned when the request method is not supported by the server implementation.
+
+`SERVER:INCOMPATIBLE_REQUEST_CONTENT`
+
+Must be returned when the request object does not match the [schema](./request.json) definition.
+
+`SERVER:INCOMPATIBLE_RESPONSE_CONTENT`
+
+Must be returned when the response object does not match the [schema](./response.json) definition.
+
+`SERVER:NOT_AUTHENTICATED`
+
+Must be returned when the client has not previously authenticated.
+
+`SERVER:NOT_AUTHORIZED`
+
+Must be returned when the client is not authorized to execute the request.
+
+`SERVER:UNHANDLED_ERROR`
+
+Must be returned when the server catches an unhandled error.
 
 
+`PROCEDURE:INCOMPATIBLE_INPUT`
 
-The next property we are going to talk about is `authentication`. Authentication allows the server to check the client has the right credentials before allowing access to execute any operation. The #authentication# section has more details regarding which options are supported by the protocol.
+Must be returned when the input for the procedure is either missing or does not match its resource schema.
 
-In this request we want to authenticate the client using a JWT bearer token; as you can see; the `scheme` defines what type of authentication we want to execute; `token` is
-the token value and `token_format` in which format the token is.
+`PROCEDURE:INCOMPATIBLE_OUTPUT`
 
+Must be returned when the output of the procedure is either missing or does not match its resource schema.
 
-`settings` is an optional property in the request that allows you to configure different aspects of the request
+`PROCEDURE:NOT_FOUND`
 
+Must be returned when the procedure in the request can not be found.
 
-- `operations` - list of operations to execute
+`PROCEDURE:TIMEOUT`
 
+Must be returned when the procedure execution exceeds its configured time.
 
+`PROCEDURE:NOT_AUTHORIZED`
 
-Response:
+Must be returned when the client is not authorized to execute the procedure.
 
-```json
-{
-  "version": "v1",
-  "api": "v1",
-  "details": {
-    "request_id": "request_id",
-    "operations": {
-      "ping": {
-        "order": 1,
-        "time_taken": 1
-      },
-      "sayHi": {
-        "order": 2,
-        "time_taken": 5
-      },
-      "transformText": {
-        "order": 3,
-        "time_taken": 5
-      },
-      "getUsersList": {
-        "order": 4,
-        "time_taken": 1000
-      }
-    }
-  },
-  "procedures": {
-    "ping": {
-      "resources": [
-        "Pong/0"
-      ]
-    },
-    "sayHi": {
-      "resources": [
-        "Hello/0"
-      ]
-    },
-    "transformText": {
-      "resources": [
-        "TransformedText/0"
-      ]
-    },
-    "usersList": {
-      "resources": ["..."],
-      "offset": 100,
-      "limit": 100,
-      "total": 10000
-    }
-  },
-  "resources": {
-    "Pong/0": "pong",
-    "Hello/0": "Hello World!",
-    "TransformedText/0": {
-      "original": "text to transform",
-      "transformed": "Text To Transform"
-    },
-    "User/1": {}
-  }
-}
-```
-
-
-
-
-
-## Operations
-
-
-Assuming we have a `User` resource that looks like:
-
-```json
-{
-  "id": "123",
-  "first_name": "John",
-  "last_name": "Doe",
-  "is_deleted": false,
-  "is_active": "true"
-}
-```
-
-let's see some operations example
-
-```json
-{
-  "id": "create-user",
-  "create": "User",
-  "properties": {
-    "id": "123",
-    "first_name": "John",
-    "last_name": "Doe"
-  },
-  "return": "*"
-}
-```
-
-
-## Settings
-
-The `settings` section allows you to provide a set of options to send out the request.
-From instructing the server on how to execute the list of operations to securely authenticate the request.
-
-Note: all main properties are optional
-
-```json
-{
-  "settings": {
-    "execution_strategy": "sequential|parallel",
-    "return_execution_time": true,
-    "authentication": {}
-  }
-}
-```
-
-- `execution_strategy` - use `sequential` to execute one operation after the other in the order provided; use `parallel` to execute all operations in parallel. The server always returns all operations results at once (excluding subscriptions).
-- `return_execution_time` - when true, this asks the server to return how long the operation took to execute in milliseconds
-- `authentication` - provides options to authenticate the request
-
-### Authentication
-v1 support a few authentication options.
-Keep in mind that regardless of which authentication scheme you choose to use, relying on a secured connection improves
-the overall security of the request.
-
-#### authentication.schema = 'basic'
-Is the simplest authentication scheme
-
-```json
-{
-  "authentication": {
-    "scheme": "basic",
-    "credential": "user@email.com",
-    "secret": "mypassword",
-    "secret_format": "base64"
-  }
-}
-```
-
-- `scheme` - defines which schema to use for the authentication step, in this case `basic`
-- `credential` - defines a publicly known information, mostly the user email address or their username
-- `secret` - secret information that should be either encrypted or obfuscated, most of the time the user's password as the user enters it
-- `secret_format` - the format in which the `secret` is transmitted
-
-#### authentication.schema = 'bearer'
-A more advanced and secure authentication scheme
-
-```json
-{
-  "authentication": {
-    "scheme": "bearer",
-    "token": "some token information",
-    "token_format": "JWT"
-  }
-}
-```
-
-- `scheme` - defines which schema to use for the authentication step, in this case `bearer`
-- `token` - the token that was previously assigned by the server
-- `token_format` - the format in which the `token` is transmitted
-
-
-
-# Response section
-
-
-
-# Implementations
-
-## [o-json-rpc-ts-server](https://github.com/odiel/o-json-rpc-ts-server)
-
-Is an open source implementation of [O-JSON-RPC](https://github.com/odiel/o-json-rpc) written in [Typescript](https://en.wikipedia.org/wiki/TypeScript) using [Deno runtime](https://en.wikipedia.org/wiki/Deno_(software)) and operating over [HTTP](https://en.wikipedia.org/wiki/HTTP) and [Websocket](https://en.wikipedia.org/wiki/WebSocket) protocols.

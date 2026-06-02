@@ -21,38 +21,22 @@
         }
       ]
     },
-    "pagination": {
-      "type": "object",
-      "properties": {
-        "offset": {
-          "type": "number"
-        },
-        "limit": {
-          "type": "number"
-        }
-      },
-      "required": [
-        "offset",
-        "limit"
-      ],
-      "additionalProperties": false
-    },
     "procedure": {
       "type": "object",
       "properties": {
         "id": {
+          "description": "Unique identifier for the procedure execution.",
           "type": "string",
-          "maxLength": 100
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9-_.]+$"
         },
         "name": {
           "type": "string",
-          "maxLength": 200
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z]{1}[a-zA-Z0-9_]+$"
         },
         "input": {
           "$ref": "#/$defs/procedureInput"
-        },
-        "pagination": {
-          "$ref": "#/$defs/pagination"
         }
       },
       "required": [
@@ -61,29 +45,13 @@
       ],
       "additionalProperties": false
     },
-    "subscription": {
-      "type": "object",
-      "properties": {
-        "id": {
-          "type": "string",
-          "maxLength": 100
-        },
-        "resource": {
-          "type": "string",
-          "maxLength": 100
-        }
-      },
-      "required": [
-        "id",
-        "resource"
-      ],
-      "additionalProperties": false
-    },
     "options": {
       "type": "object",
       "properties": {
         "id": {
-          "type": "string"
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9-_.]+$"
         },
         "execution": {
           "$ref": "#/$defs/requestOptionExecution"
@@ -117,19 +85,92 @@
           "type": "object",
           "properties": {
             "scheme": {
-              "const": "bearer"
+              "const": "session"
             },
             "token": {
-              "type": "string"
+              "type": "string",
+              "maxLength": 256
             },
-            "token_format": {
-              "type": "string"
+            "token_type": {
+              "type": "string",
+              "enum": ["plain-text", "base64"]
             }
           },
           "required": [
             "scheme",
             "token",
-            "token_format"
+            "token_type"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "scheme": {
+              "const": "api_key"
+            },
+            "token": {
+              "type": "string",
+              "maxLength": 256
+            },
+            "token_type": {
+              "type": "string",
+              "enum": ["plain-text", "base64"]
+            }
+          },
+          "required": [
+            "scheme",
+            "token",
+            "token_type"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "scheme": {
+              "type": "string",
+              "enum": ["access_token", "refresh_token"]
+            },
+            "token": {
+              "type": "string",
+              "maxLength": 256
+            },
+            "token_type": {
+              "type": "string",
+              "enum": ["jwt"]
+            }
+          },
+          "required": [
+            "scheme",
+            "token",
+            "token_type"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "scheme": {
+              "const": "identity_provider"
+            },
+            "token": {
+              "type": "string",
+              "maxLength": 256
+            },
+            "token_type": {
+              "type": "string",
+              "enum": ["id", "access", "refresh"]
+            },
+            "provider": {
+              "type": "string",
+              "maxLength": 128
+            }
+          },
+          "required": [
+            "scheme",
+            "token",
+            "token_type"
           ],
           "additionalProperties": false
         }
@@ -152,31 +193,33 @@
   },
   "properties": {
     "protocol": {
-      "description": "Protocol version",
-      "type": "string",
-      "maxLength": 3
+      "description": "ORPC protocol version.",
+      "const": "v1"
     },
     "api": {
-      "description": "API version",
+      "description": "API version.",
       "type": "string",
-      "maxLength": 100
+      "maxLength": 128,
+      "pattern": "^[a-zA-Z0-9-_.\/]+$"
     },
     "procedures": {
-      "description": "",
+      "description": "Collection of procedures to execute.",
       "type": "array",
       "items": {
         "$ref": "#/$defs/procedure"
       }
     },
     "subscriptions": {
-      "description": "",
+      "description": "Collection of resource names to subscribe.",
       "type": "array",
       "items": {
-        "$ref": "#/$defs/subscription"
+        "type": "string",
+        "maxLength": 128,
+        "pattern": "^[a-zA-Z]{1}[a-zA-Z0-9_]+$"
       }
     },
     "options": {
-      "description": "",
+      "description": "Set of configurable options to provide additional information for the request.",
       "$ref": "#/$defs/options"
     }
   },

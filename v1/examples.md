@@ -197,7 +197,7 @@ Response:
   },
   "details": {
     "request_id": "request_1",
-    "excution_time": 2005,
+    "execution_time": 2005,
     "procedures_execution": {
       "ping": {
         "id": "ping",
@@ -288,40 +288,13 @@ Response:
 }
 ```
 
-### Procedure not found
+### An unhandled error occurred during the request processing
 Request:
 ```json
 {
   "protocol": "v1",
   "api": "v1",
   "procedures": [
-    {
-      "id": "nonExistingProcedure",
-      "name": "nonExistingProcedure"
-    }
-  ] 
-}
-```
-
-Response:
-```json
-{
-  "protocol": "v1",
-  "api": "v1",
-  "error": {
-    "code": "PROCEDURE:NOT_FOUND",
-    "message": "Procedure not found."
-  }
-}
-```
-
-### Unhandled error
-Request:
-```json
-{
-  "protocol": "v1",
-  "api": "v1",
-  "functions": [
     {
       "id": "getVendorInfo",
       "name": "getVendorInfo"
@@ -342,13 +315,75 @@ Response:
 }
 ```
 
+### An localized error occurs while executing a procedure
+Request:
+```json
+{
+  "protocol": "v1",
+  "api": "v1",
+  "procedures": [
+    {
+      "id": "getVendorInfo",
+      "name": "getVendorInfo"
+    }
+  ] 
+}
+```
+
+Response:
+```json
+{
+  "protocol": "v1",
+  "api": "v1",
+  "procedures": {
+    "getVendorInfo": {
+      "error": {
+        "code": "SERVER:UNHANDLED_ERROR",
+        "message": "Unhandled error."
+      }
+    }
+  }
+}
+```
+
+### Calling a non existing procedure
+Request:
+```json
+{
+  "protocol": "v1",
+  "api": "v1",
+  "procedures": [
+    {
+      "id": "nonExistingProcedure",
+      "name": "nonExistingProcedure"
+    }
+  ] 
+}
+```
+
+Response:
+```json
+{
+  "protocol": "v1",
+  "api": "v1",
+  "procedures": {
+    "nonExistingProcedure": {
+      "error": {
+        "code": "PROCEDURE:NOT_FOUND",
+        "message": "Procedure not found."
+      }
+    }
+  }
+}
+```
+
 ### Incompatible procedure input
 Request:
 ```json
 {
   "protocol": "v1",
   "api": "v1",
-  "functions": [
+  "procedures": [
     {
       "id": "sayHello",
       "name": "sayHello",
@@ -363,9 +398,13 @@ Response:
 {
   "protocol": "v1",
   "api": "v1",
-  "error": {
-    "code": "PROCEDURE:INCOMPATIBLE_INPUT",
-    "message": "Incompatible input content."
+  "procedures": {
+    "sayHello": {
+      "error": {
+        "code": "PROCEDURE:INCOMPATIBLE_INPUT",
+        "message": "Incompatible input content."
+      }
+    }
   }
 }
 ```
@@ -376,13 +415,18 @@ Request:
 {
   "protocol": "v1",
   "api": "v1",
-  "functions": [
+  "procedures": [
     {
-      "id": "sayHello",
-      "name": "sayHello",
-      "input": { "message":  "World" }
+      "id": "echo",
+      "name": "echo",
+      "input": "Is anybody there?"
     }
-  ] 
+  ],
+  "options": {
+    "execution": {
+      "procedure_timeout": 1
+    }
+  }
 }
 ```
 
@@ -391,9 +435,61 @@ Response:
 {
   "protocol": "v1",
   "api": "v1",
-  "error": {
-    "code": "PROCEDURE:INCOMPATIBLE_INPUT",
-    "message": "Incompatible input content."
+  "procedures": {
+    "echo": {
+      "error": {
+        "code": "PROCEDURE:TIMEOUT",
+        "message": "Procedure timed out."
+      }
+    }
+  }  
+}
+```
+
+### Partial request failure where 1 out of 3 procedures failed
+Request:
+
+```json
+{
+  "protocol": "v1",
+  "api": "v1",
+  "procedures": [
+    {
+      "id": "ping",
+      "name": "ping"
+    },
+    {
+      "id": "sayHello",
+      "name": "sayHello",
+      "input": { "message": "World" }
+    },
+    {
+      "id": "echo",
+      "name": "echo",
+      "input": "Is anybody there?"
+    }
+  ]
+}
+```
+
+Response:
+```json
+{
+  "protocol": "v1",
+  "api": "v1",
+  "procedures": {
+    "ping": {
+      "result": "pong!"
+    },
+    "sayHello": {
+      "error": {
+        "code": "PROCEDURE:INCOMPATIBLE_INPUT",
+        "message": "Incompatible input content."
+      }
+    },
+    "echo": {
+      "result": "Is anybody there?"
+    }
   }
 }
 ```

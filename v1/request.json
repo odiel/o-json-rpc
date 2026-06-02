@@ -1,6 +1,5 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "type": "object",
   "$defs": {
     "procedureInput": {
       "anyOf": [
@@ -48,7 +47,7 @@
     "options": {
       "type": "object",
       "properties": {
-        "id": {
+        "request_id": {
           "type": "string",
           "maxLength": 128,
           "pattern": "^[a-zA-Z0-9-_.]+$"
@@ -191,9 +190,10 @@
       "additionalProperties": false
     }
   },
+  "type": "object",
   "properties": {
     "protocol": {
-      "description": "ORPC protocol version.",
+      "description": "Protocol version.",
       "const": "v1"
     },
     "api": {
@@ -210,12 +210,19 @@
       }
     },
     "subscriptions": {
-      "description": "Collection of resource names to subscribe.",
+      "description": "Collection of resources to subscribe.",
       "type": "array",
       "items": {
-        "type": "string",
-        "maxLength": 128,
-        "pattern": "^[a-zA-Z]{1}[a-zA-Z0-9_]+$"
+        "type": "object",
+        "properties": {
+          "resource_name": {
+            "description": "Name of the resource to subscribe",
+            "type": "string",
+            "maxLength": 128,
+            "pattern": "^[a-zA-Z]{1}[a-zA-Z0-9_]+$"
+          }
+        },
+        "required": ["resource_name"]
       }
     },
     "options": {

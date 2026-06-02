@@ -3,24 +3,29 @@
 ## Definitions
 
 ### API 
+
 An arbitrary value to define a version, namespace or a combination of both.
 
 ### Procedure
+
 Reusable piece of code logic to be executed when called by its assigned name.
 
 ### Resource
-Composed by a name and a JSON schema; it defines a typed dataset that is used as input arguments for executing procedures as well as the result of a procedure output.
-Resource names also have a use as reference for client applications that are interested in getting notified every time a resource changes.    
+
+Composed by a name and a JSON schema; it defines a typed dataset that is used as input argument for executing procedures as well as the result of a procedure output.
+Resource names also have a use as reference for client applications that are interested in getting notified when a resource changes.    
 
 ### Subscription
+
 A mechanism that allows clients to connect to the server and receive notifications when changes for a Resource are broadcast.
 
 ### Authentication
-Authentication is a required step where the client is required to provide a set of credentials in order to gain access to content with limited access.
+
+Authentication is a required step where the client is must provide their credentials in order to gain access to protected content.
 
 ## Request object properties - [schema definition](./request.json)
 
-This section defines the JSON request object and all its properties.
+This section defines in details the JSON request object.
 
 ### protocol (required; string)
 
@@ -49,12 +54,12 @@ Examples combining both versioning and namespace.
 
 ### procedures (optional; strict object)
 
-Collection of procedure definitions to be executed for the request.
+Collection of procedure definitions to be executed.
 
 `procedures[].id` (required; string)
 
-Unique identifier assigned to the execution of the procedure for that request. \
-Because the same procedure name can be used multiple times in one single request; *id* allows to identify a particular procedure execution.
+Unique procedure identifier for the request. \
+Because the same procedure can be used multiple times in one single request; *id* allows to identify a particular procedure result in the response.
 
 `procedures[].name` (required; string)
 
@@ -62,22 +67,22 @@ Name of the procedure to execute.
 
 `procedures[].input` (optional; JSON value)
 
-Input resource to pass to the procedure for execution. \
-Although it is listed as optional, procedures defining an input resource must enforce validating its content before execution.
-Failing to validate the input resource must result in a PROCEDURE:INCOMPATIBLE_INPUT error.
+Input resource to pass as argument to the procedure for execution. \
+Although it is listed as optional, in the implementation procedures defining an input resource must enforce validating its content before execution.
+Failing to validate the input resource must result in a PROCEDURE:INCOMPATIBLE_INPUT error code.
 
-### subscriptions (optional; collection of strict object)
+### subscriptions (optional; collection of strict objects)
 
-This section in defines a list of objects to subscribe to specific resources to get notifications when a change happens.
-Note: the client should establish a direct channel with the backend to get notified.
+This section defines a list of objects containing the resource name the client wants to subscribe to.
+Note: the client should establish a direct channel with the backend in order to get notifications when a resource changes.
 
-`subscriptions.resource_name` (required, name of the resource to subscribe)
+`subscriptions[].resource_name` (required, name of the resource to subscribe)
 
 ### options (optional; strict object)
 
-Allows the client to configure aspects of the request as well as hinting needed response details.
+Allows the client to configure the request options to instruct the server of specific requirements.
 
-`options.id` (optional; string)
+`options.request_id` (optional; string)
 
 Arbitrary id value to assign to the request. \
 The server implementation must either assign a random id value or use the one provided by the client to uniquely identify a request.
@@ -86,7 +91,7 @@ The server implementation must either assign a random id value or use the one pr
 
 Section to configure the request execution.
 
-`options.execution.strategy` (optional; one of the following below)
+`options.execution.strategy` (optional; one of: `sequential` or `parallel`)
 
 - `sequential`: executes one procedure at the time; the response is provided once the last procedure execution is done; this must be the default execution strategy if none is provided.
 - `parallel`: executes the procedures in parallel, the response is provided once all procedures execution finish.
@@ -103,14 +108,14 @@ One or any combination of values is acceptable.
 
 - `request_id` - tells the server to return the request id.
 - `request_execution_time` - tells the server to return the total execution time of the request; value must be in milliseconds. 
-- `procedures_execution_details` - tells the server to return details for each procedure execution; check the `Response object properties` section below for more information.
+- `procedures_execution_details` - tells the server to return details for each procedure execution. Check the `Response object properties` section below for more information.
 
 `options.authentication` (optional; strict object); the `Authentication options` section below details this option.
 
 ## Authentication options
 
 O-JSON-RPC does not specify any implementation details regarding the handling of the authentication mechanism;
-this option is only a space in the request object for the client to present the credentials to the server application for a request.
+this option is only a holder in the request object for the client to present the credentials.
 
 `options.authentication.scheme` (required, string)
 
@@ -126,7 +131,7 @@ Type or format of the token.
 
 `options.authentication.provider` (optional, string)
 
-Applicable only when `scheme` is `identity_provider`. Name of the provider for the identity.
+Name of the provider of the identity. Applicable only when `scheme` is `identity_provider`. 
 
 ### Supported mechanisms
 
@@ -157,12 +162,12 @@ provider: string
 
 ## Response object properties - [schema definition](./response.json)
 
-This section defines the JSON response object and all its properties.
+This section defines in details the JSON response object.
 
 ### protocol (required)
 
 When the request is properly handled the protocol version must match the same version from the request. \
-When the server is unable to identify the protocol in the request it must default to the lowest known protocol version, that is `v1`.
+When the server is unable to identify the protocol in the request, it must default to the lowest known version; `v1` in this case.
 
 ### api (required)
 
@@ -170,17 +175,17 @@ API value, must match the same value from the request when the API is registered
 
 ### error (optional; strict object)
 
-Section produced as a result of a failure during the processing of the request.
+Section produced as a result of a failure during the request processing.
 
-- `error.code` (required; string) error code, see the list below
-- `error.message` (optional; string) additional error information
+- `error.code` (required; string) error code, see the list below.
+- `error.message` (optional; string) additional error information.
 
 ### procedures (optional; strict object)
 
 Map of results for the procedures execution.
 Indexed by the procedure id given in the request object.
 
-There are 2 possible outcomes of a procedure execution `error` or `result`, only one or the other must appear.
+There are 2 possible outcomes of a procedure execution `error` or `result`; only one or the other must appear.
 
 `procedures[].error` (required; strict object) required when there is any type of failure during the procedure execution.
 
@@ -194,21 +199,21 @@ There are 2 possible outcomes of a procedure execution `error` or `result`, only
 This section must appear when the request is sent with any value in `options.return`.
 
 `details.request_id` (required when `options.return['request_id']`) id of the request. \
-`details.execution_time` (required when `options.return['request_execution_time']`) total number of milliseconds the request took to process. \
-`details.procedures_execution` (required when `options.return['procedures_execution_details']` map of the detailed run for each procedure.
+`details.execution_time` (required when `options.return['request_execution_time']`) holds the total number of milliseconds the request took to process. \
+`details.procedures_execution` (required when `options.return['procedures_execution_details']` additional information for the procedure run.
 - `details.procedures_execution[].id` (required; string) id assigned to the procedure execution in the request.
 - `details.procedures_execution[].procedure` (required, string) name of the procedure executed.
 - `details.procedures_execution[].order` (required, number) order number in which the procedure was executed in the server.
-- `details.procedures_execution[].timed_out` (required, boolean) true when the procedure timed out.
+- `details.procedures_execution[].timed_out` (required, boolean) true when the procedure times out.
 - `details.procedures_execution[].execution_time` (required, number) number of milliseconds it took to run the procedure; value must be set to the timeout configuration when exceeding it.
 
 ## Errors definition
 
-There are 2 main categories of errors:
+There are 2 main categories of errors, `SERVER` and `PROCEDURE`. \
+The list below defines the most common error codes that are likely to appear in implementations over HTTP and Websocket protocols. 
 
-- `SERVER` for errors specific to the server execution and general request processing. Server errors are must be returned in the main response object.
-- `PROCEDURE` for errors related to each procedure execution. Procedure errors are scoped to a particular procedure execution result.
-
+#### Server specific errors
+For errors specific to the server execution and general request processing. Server errors must be returned in the main response object.
 For errors where the request content can not be parsed the server must default to the lowest protocol version, that is `v1`.
 
 `SERVER:UPGRADE_REQUEST_NOT_SUPPORTED`
@@ -217,7 +222,7 @@ Must be returned when upgrading the client request is not supported by the serve
 
 `SERVER:REQUEST_CONTENT_TOO_BIG`
 
-Must be returned when the request content exceed the allowed content size by the server configuration.
+Must be returned when the request content exceeds the allowed content size by the server configuration.
 
 `SERVER:REQUEST_METHOD_NOT_SUPPORTED`
 
@@ -225,15 +230,15 @@ Must be returned when the request method is not supported by the server implemen
 
 `SERVER:INCOMPATIBLE_REQUEST_CONTENT`
 
-Must be returned when the request object does not match the [schema](./request.json) definition.
+Must be returned when the request object does not match the [request schema](./request.json) definition.
 
 `SERVER:INCOMPATIBLE_RESPONSE_CONTENT`
 
-Must be returned when the response object does not match the [schema](./response.json) definition.
+Must be returned when the response object does not match the [response schema](./response.json) definition.
 
 `SERVER:NOT_AUTHENTICATED`
 
-Must be returned when the client has not previously authenticated.
+Must be returned when the client is not authenticated.
 
 `SERVER:NOT_AUTHORIZED`
 
@@ -243,6 +248,9 @@ Must be returned when the client is not authorized to execute the request.
 
 Must be returned when the server catches an unhandled error.
 
+#### Procedure specific errors 
+
+For errors related to each procedure execution. Procedure errors are scoped to a particular procedure execution result.
 
 `PROCEDURE:INCOMPATIBLE_INPUT`
 

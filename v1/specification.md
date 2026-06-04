@@ -93,8 +93,8 @@ Section to configure the request execution.
 
 `options.execution.strategy` (optional; one of: `sequential` or `parallel`)
 
-- `sequential`: executes one procedure at the time; the response is provided once the last procedure execution is done; this must be the default execution strategy if none is provided.
-- `parallel`: executes the procedures in parallel, the response is provided once all procedures execution finish.
+- `parallel`: executes the procedures in parallel, the response is provided once all procedures execution finish; this must be the default execution strategy if none is provided.
+- `sequential`: executes one procedure at the time; the response is provided once the last procedure execution is done.
 
 `options.execution.procedure_timeout` (optional; number)
 
@@ -141,11 +141,18 @@ scheme: session
 token_type: plain-text | base64
 ````
 
+This schema is specific for the typical industry-wide Session authentication mechanism.
+Authenticating using `session` must provide a token value previously given by the server to the client.
+The `token_type` hints the server application when reading the `token` value.
+
 #### API Key
 ```
 scheme: api_key
 token_type: plain-text | base64
 ````
+
+Similar to `session` authentication mechanism. The main difference is that `api_key` hints the server of a different 
+way to process the authentication request.
 
 #### Token
 ```
@@ -153,12 +160,20 @@ scheme: access_token | refresh_token
 token_type: jwt
 ````
 
+Token base authentication mechanism issues 2 types of tokens after validating the user's credentials.
+- `access_token` is for subsequent application requests after authenticating, it has a short expiration date and should be refreshed often. 
+- `refresh_token` has a longer time to live, and it is used to ask the server for a fresh `access_token`. 
+
 #### Identity Provider
 ```
 scheme: identity_provider
-token_type: id | access | refresh
+token_type: string
 provider: string
 ````
+
+This scheme allows to process requests froms users who authenticated through a third party system.
+Generally the client application receives a token and what type of token it is after a successful authentication; this information is then sent to the server application to verify if the user can have access to protected content.
+`token_type` value is not enforced in this definition as it could be different depending on the provider. 
 
 ## Response object properties - [schema definition](./response.json)
 
@@ -203,7 +218,7 @@ This section must appear when the request is sent with any value in `options.ret
 `details.procedures_execution` (required when `options.return['procedures_execution_details']` additional information for the procedure run.
 - `details.procedures_execution[].id` (required; string) id assigned to the procedure execution in the request.
 - `details.procedures_execution[].procedure` (required, string) name of the procedure executed.
-- `details.procedures_execution[].order` (required, number) order number in which the procedure was executed in the server.
+- `details.procedures_execution[].order` (required, number) order number in which the procedure execution finished in the server.
 - `details.procedures_execution[].timed_out` (required, boolean) true when the procedure times out.
 - `details.procedures_execution[].execution_time` (required, number) number of milliseconds it took to run the procedure; value must be set to the timeout configuration when exceeding it.
 
@@ -215,18 +230,11 @@ The list below defines the most common error codes that are likely to appear in 
 #### Server specific errors
 For errors specific to the server execution and general request processing. Server errors must be returned in the main response object.
 For errors where the request content can not be parsed the server must default to the lowest protocol version, that is `v1`.
-
-`SERVER:UPGRADE_REQUEST_NOT_SUPPORTED`
-
-Must be returned when upgrading the client request is not supported by the server implementation.
+Check out the [Failed requests](./examples.md) section in the examples file to have a better idea.
 
 `SERVER:REQUEST_CONTENT_TOO_BIG`
 
 Must be returned when the request content exceeds the allowed content size by the server configuration.
-
-`SERVER:REQUEST_METHOD_NOT_SUPPORTED`
-
-Must be returned when the request method is not supported by the server implementation.
 
 `SERVER:INCOMPATIBLE_REQUEST_CONTENT`
 
@@ -247,6 +255,21 @@ Must be returned when the client is not authorized to execute the request.
 `SERVER:UNHANDLED_ERROR`
 
 Must be returned when the server catches an unhandled error.
+
+`SERVER:DUPLICATED_PROCEDURE_IDS`
+
+Must be returned when the server identifies that two or more procedures share the same id.
+
+#### The error codes below are just suggestions depending on the server implementation.
+
+`SERVER:UPGRADE_REQUEST_NOT_SUPPORTED`
+
+This error should be returned when attempting to upgrade a websocket request but the server implementation does not support it.
+
+`SERVER:REQUEST_METHOD_NOT_SUPPORTED`
+
+Implementations over HTTP benefit more by processing request through a POST method; to discourage clients from requesting through any other method use this error.
+
 
 #### Procedure specific errors 
 
@@ -271,4 +294,8 @@ Must be returned when the procedure execution exceeds its configured time.
 `PROCEDURE:NOT_AUTHORIZED`
 
 Must be returned when the client is not authorized to execute the procedure.
+
+`PROCEDURE:NOT_EXECUTED`
+
+Must be returned when the procedure logic was unable to run.
 

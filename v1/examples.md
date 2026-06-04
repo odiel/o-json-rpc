@@ -5,6 +5,7 @@
 
 - `ping` procedure always returns `pong!`.
 - `sayHello` procedure expects a string as input and returns a string where `{replace}` in `Hello {replace}!` is replaced by the input.
+- `prettifyHello` uses a `helloMessaage` property in the request context to add two more exclamation marks at the end.
 - `echo` procedure returns the string input value in the result after 2 seconds.
 - `getUserAccount` procedure returns `email` and `signedInDate` for an authenticated user.
 - `getVendorInfo` procedure produces an error
@@ -64,7 +65,7 @@ Response:
 }
 ```
 
-### Executing a procedure that expects an input value
+### Executing a procedure that expects an input
 Request:
 ```json
 {
@@ -315,7 +316,7 @@ Response:
 }
 ```
 
-### An localized error occurs while executing a procedure
+### A localized error occurs while executing a procedure
 Request:
 ```json
 {
@@ -346,7 +347,7 @@ Response:
 }
 ```
 
-### Calling a non existing procedure
+### Calling a non-existing procedure
 Request:
 ```json
 {
@@ -446,9 +447,8 @@ Response:
 }
 ```
 
-### Partial request failure where 1 out of 3 procedures failed
+### Partial request failure where 1 out of 3 procedures failed in a `parallel` execution strategy
 Request:
-
 ```json
 {
   "protocol": "v1",
@@ -494,7 +494,124 @@ Response:
 }
 ```
 
+### Procedure `prettifyHello` didn't execute due to missing required context from another procedure in a `sequential` execution
+Request:
+```json
+{
+  "protocol": "v1",
+  "api": "v1",
+  "procedures": [
+    {
+      "id": "sayHello",
+      "name": "sayHello",
+      "input": { "message": "World" }
+    },
+    {
+      "id": "prettifyHello",
+      "name": "prettifyHello"
+    }
+  ],
+  "options": {
+    "execution": {
+      "strategy": "sequential"
+    }
+  }
+}
+```
+
+Response:
+```json
+{
+  "protocol": "v1",
+  "api": "v1",
+  "procedures": {
+    "sayHello": {
+      "error": {
+        "code": "PROCEDURE:INCOMPATIBLE_INPUT",
+        "message": "Incompatible input content."
+      }
+    },
+    "prettifyHello": {
+      "error": {
+        "code": "PROCEDURE:NOT_EXECUTED",
+        "message": "Procedure not executed."
+      }
+    }
+  }
+}
+```
+
+### A request with procedures having the same id results in a `SERVER:DUPLICATED_PROCEDURE_IDS` error code
+Request:
+```json
+{
+  "protocol": "v1",
+  "api": "v1",
+  "procedures": [
+    {
+      "id": "ping",
+      "name": "ping"
+    },
+    {
+      "id": "ping",
+      "name": "ping"
+    }
+  ]
+}
+```
+
+Response:
+```json
+{
+  "protocol": "v1",
+  "api": "v1",
+  "error": {
+    "code": "SERVER:DUPLICATED_PROCEDURE_IDS",
+    "message": "Found duplicated procedure ids."
+  }
+}
+```
+
 ### Procedure execution not authorized
+Request:
+```json
+{
+  "protocol": "v1",
+  "api": "v1",
+  "procedures": [
+    {
+      "id": "getUserAccount",
+      "name": "getUserAccount"
+    }
+  ],
+  "options": {
+    "authentication": {
+      "scheme": "access_token",
+      "token": "back_jwt_token_value",
+      "token_type": "jwt"
+    }
+  } 
+}
+```
+
+Response:
+
+```json
+{
+  "protocol": "v1",
+  "api": "v1",
+  "procedures": {
+    "getUserAccount": {
+      "error": {
+        "code": "SERVER:NOT_AUTHENTICATED",
+        "message": "Not authenticated."
+      }
+    }
+  }
+}
+```
+
+### Procedure execution 
 Request:
 ```json
 {

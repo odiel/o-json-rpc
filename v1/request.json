@@ -159,7 +159,8 @@
             },
             "token_type": {
               "type": "string",
-              "enum": ["id", "access", "refresh"]
+              "maxLength": 128,
+              "pattern": "^[a-zA-Z0-9-_.]+$"
             },
             "provider": {
               "type": "string",

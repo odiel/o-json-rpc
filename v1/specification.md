@@ -246,7 +246,7 @@ Must be returned when the response object does not match the [response schema](.
 
 `SERVER:NOT_AUTHENTICATED`
 
-Must be returned when the client is not authenticated.
+Must be returned when the server refuses the whole request due to the client not being authenticated.
 
 `SERVER:NOT_AUTHORIZED`
 
@@ -290,6 +290,10 @@ Must be returned when the procedure in the request can not be found.
 `PROCEDURE:TIMEOUT`
 
 Must be returned when the procedure execution exceeds its configured time.
+
+`PROCEDURE:NOT_AUTHENTICATED`
+
+Must be returned when the server refuses to process a procedure due to the client not being authenticated.
 
 `PROCEDURE:NOT_AUTHORIZED`
 
